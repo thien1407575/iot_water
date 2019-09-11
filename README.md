@@ -1,5 +1,5 @@
 # iot_water
-Thiết bị sử dụng:
+Thiết bị sử dụng: <BR>
  1 Adruino wemos d1 & r2 <BR>
  2 sensor độ ẩm <BR>
  3 sensor đo lưu lượng nước <BR>
