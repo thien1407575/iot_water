@@ -6,6 +6,7 @@ Thiết bị sử dụng:
  4 sensor đo khoảng cách
  5 bơm nước 5v
  6 nguồn 12 v
+ <BR>
 Thư viên:
  1 SimpleTimer
  2 Adafruit_MQTT
