@@ -1,19 +1,24 @@
 const byte interruptPin = 13;
 float numberOfInterrupts = 0;
 const byte RelayPin = 4;
-const byte Dis_EchoPin = 14;//d5
-const byte Dis_TrigPin = 12; //d6
+const byte echo = 14;//d5
+const byte trig = 12; //d6
 const byte MoisturePin = A0; 
 float limit_water=1.0;
 int limit_moistury=10;
 int val=0;
-
+#include <FS.h>   
 #include <ESP8266WiFi.h>
+//this needs to be first, or it all crashes and burns...
+//needed for library
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>    
+
+
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
  
-#define WIFI_SSID "KYC OFFICE"
-#define WIFI_PASS "kyc686868"
 #define MQTT_SERV "io.adafruit.com"
 #define MQTT_PORT 1883
 #define MQTT_NAME "thienlh96"
@@ -37,28 +42,50 @@ Adafruit_MQTT_Publish water = Adafruit_MQTT_Publish(&mqtt, MQTT_NAME "/f/water2"
 SimpleTimer timer;
 
 void Moisture(){
+  getdistance();
   Serial.println("do am la:");
   val = analogRead(MoisturePin);  // read the input pin
   int percent = map(val, 0, 1023, 0, 100);
   Serial.println(100-percent); 
   moisture.publish(100-percent);
   
-  
-//  Serial.println(val); 
+
 }
 
 void setup() {
  
-  Serial.begin(9600);
-  //Connect to WiFi
-  Serial.print("\n\nConnecting Wifi... ");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.println();
+
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  WiFiManager wifiManager;
+
+  //exit after config instead of connecting
+  wifiManager.setBreakAfterConfig(true);
+
+  //reset settings - for testing
+  //wifiManager.resetSettings();
+
+
+  //tries to connect to last known settings
+  //if it does not connect it starts an access point with the specified name
+  //here  "AutoConnectAP" with password "password"
+  //and goes into a blocking loop awaiting configuration
+  if (!wifiManager.autoConnect("AutoConnectAP", "password")) {
+    Serial.println("failed to connect, we should reset as see if it connects");
+    delay(3000);
+    ESP.reset();
+    delay(5000);
   }
- 
-  Serial.println("OK!");
+
+  //if you get here you have connected to the WiFi
+  Serial.println("connected...yeey :)");
+
+
+  Serial.println("local ip");
+  Serial.println(WiFi.localIP());
   //Subscribe to the onoff feed
   mqtt.subscribe(&onoff); 
   mqtt.subscribe(&limit);
@@ -69,6 +96,8 @@ void setup() {
   
   pinMode(RelayPin, OUTPUT);
   digitalWrite(RelayPin,LOW );
+  pinMode(trig,OUTPUT); 
+  pinMode(echo,INPUT); 
   timer.setInterval(3000, Moisture);
   
 }
@@ -103,13 +132,6 @@ void loop() {
       Serial.println("limit_moistury: ");
       Serial.print(limit_moistury);
     }
-    //If we're in here, a subscription updated...
-    //limit_water= limit.lastread;
-    //limit_moisture= Min_moisture.lastread;
-//    Serial.print("limit_moisture: ");
-//    Serial.println((char*) Min_moisture.lastread);
-//    Serial.print("limit_water ");
-//    Serial.println((char*) limit.lastread);
     if (subscription == &onoff)
     {
      //If the new value is  "ON", turn the light on.
@@ -167,4 +189,22 @@ void MQTT_connect()
        }
   }
   Serial.println("MQTT Connected!");
-} //END CODE
+}
+int getdistance(){
+  unsigned long duration; // biến đo thời gia
+  int distance;           // biến lưu khoảng các
+ 
+  digitalWrite(trig,0);   // tắt chân tri
+  delayMicroseconds(2);
+  digitalWrite(trig,1);   // phát xung từ chân tri
+  delayMicroseconds(5);   // xung có độ dài 5 microSecond
+  digitalWrite(trig,0);   // tắt chân tri
+
+  duration = pulseIn(echo,HIGH); 
+  distance = int(duration/2/29.412);
+  Serial.println(distance);
+  Serial.println("cm");
+  return distance;
+  
+}
+//END CODE
