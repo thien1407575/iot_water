@@ -70,6 +70,15 @@ void setup() {
   pinMode(RelayPin, OUTPUT);
   digitalWrite(RelayPin,LOW );
   timer.setInterval(3000, Moisture);
+  boolean result = WiFi.softAP("ESPsoftAP_01", "12345678");
+  if(result == true)
+  {
+    Serial.println("Ready");
+  }
+  else
+  {
+    Serial.println("Failed!");
+  }
   
 }
  
